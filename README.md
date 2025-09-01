@@ -1,1 +1,2 @@
-# vs2013工具编写的仿ubnutu风格linux管理window文件的仿文件系统程序
+# 仿linux文件系统
+基于vs2013工具用C++编写的仿ubnutu风格的linux管理window文件的仿文件系统程序
