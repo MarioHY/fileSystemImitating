@@ -1,2 +1,2 @@
 # 仿linux文件系统
-基于vs2013工具用C++编写的仿ubnutu风格的linux管理window文件的仿文件系统程序，伴有自定义小型的模拟vim的文本编辑器
+基于vs2013工具用C++编写的仿ubnutu风格的linux管理window文件的仿文件管理系统，带有小型模拟vim的文本编辑器
