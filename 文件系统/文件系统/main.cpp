@@ -1,8 +1,8 @@
 ﻿#include "Util.h"
 #include "vim.h"
-std::string homePath = "C:\\Users\\myh\\Desktop\\linux\\home";//文件系统根目录
-std::string passwdPath = "C:\\Users\\myh\\Desktop\\linux\\etc\\passwd.txt";//用户信息文件路径
-std::string groupPath = "C:\\Users\\myh\\Desktop\\linux\\etc\\group.txt";//用户信息文件路径
+std::string homePath = ".\\home";//文件系统根目录
+std::string passwdPath = ".\\etc\\passwd.txt";//用户信息文件路径
+std::string groupPath = ".\\etc\\group.txt";//用户信息文件路径
 //char* Blocks = (char*)malloc(1024 * 1024 * sizeof(char));//磁盘块大小为1024个1kB块
 User UFD[10];//用户信息数组加二级文件系统
 bool Map[1024] = { false };//块的分布情况
@@ -917,4 +917,5 @@ int main()
 {
 	operation();
 	return 0;
+
 }
