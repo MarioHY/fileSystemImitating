@@ -1,0 +1,498 @@
+#include "Interactor.h"
+#include <regex>
+////////////////////////////////////////////////////////////这个类是用来初始化和指令判断的///////////////////////////////////////////////////////////
+
+/**
+* @brief 有参数的构造函数，初始化文件，获取文件材质
+*/
+Interactor::Interactor() 
+{
+	char inputFile[25];//存放输入的文件名
+	char outputFile[25];//存放要输出的文件名
+
+	std::cout << "请输入要编辑的文件名称: ";
+	std::cin.getline(inputFile, sizeof(inputFile));
+
+	std::cout << "请输入要输出的文件名(留空则为覆盖原文件): ";
+	std::cin.getline(outputFile, sizeof(outputFile));
+
+	if (outputFile[0] == '\0')
+	{
+		controller = new TextController(inputFile, inputFile);
+	}
+	else 
+	{
+		controller = new TextController(inputFile, outputFile);
+	}
+
+	controller->print();
+}
+/**
+* @brief 无参数的构造函数
+*/
+Interactor::Interactor(std::string inputFile, std::string outputFile) 
+{
+	controller = new TextController(inputFile, outputFile);
+}
+/**
+* @brief 离开释放内存
+*/
+Interactor::~Interactor() 
+{
+	delete controller;
+}
+/**
+* @brief 输入命令参数，判断命令要执行的操作，进行调用
+*/
+///////////////////////////////////////////////////////////////////////总的操作在这，通过调用对象函数来操作///////////////////////////
+void Interactor::paramCommand(const char* command)
+{
+	if (strcmp(command, "h") == 0) 
+	{
+		// help命令
+		for (int i = 1; i < strlen(command); i++) 
+		{
+			if (command[i] != ' ') 
+			{
+				std::cout << "未知指令! 输入h获取帮助!" << std::endl;
+				return;
+			}
+		}
+		for (int i = 0; i < 16; i++) 
+		{
+			std::cout << HELP[i] << std::endl;
+		}
+	}
+	else if (strcmp(command, "v") == 0) 
+	{
+		// view命令
+		for (int i = 1; i < strlen(command); i++) 
+		{
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << viewHelp << std::endl;
+				return;
+			}
+		}
+		this->view();
+	}
+	else if (strcmp(command, "begin") == 0) 
+	{
+		// begin命令
+		for (int i = 5; i < strlen(command); i++)
+		{
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << beginHelp << std::endl;
+				return;
+			}
+		}
+		this->begin();
+	}
+	else if (strcmp(command, "end") == 0) 
+	{
+		// end命令
+		for (int i = 3; i < strlen(command); i++) 
+		{
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << endHelp << std::endl;
+				return;
+			}
+		}
+		this->end();
+	}
+	else if (strcmp(command, "p") == 0)
+	{
+		// prev命令
+		for (int i = 1; i < strlen(command); i++) {
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << prevHelp << std::endl;
+				return;
+			}
+		}
+		this->prev();
+	}
+	else if (strcmp(command, "n") == 0)
+	{
+		// next命令
+		for (int i = 1; i < strlen(command); i++)
+		{
+			if (command[i] != ' ') 
+			{
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << nextHelp << std::endl;
+				return;
+			}
+		}
+		this->next();
+	}
+	else if (strncmp(command, "j", 1) == 0)
+	{
+		// jump命令
+		if (strlen(command) < 2 || command[1] != ' ') 
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << jumpHelp << std::endl;
+			return;
+		}
+
+		int line;
+		if (sscanf(command, "j %d", &line) == 1)
+		{
+			// 命令符合规范
+			this->jump(line);
+		}
+		else
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << jumpHelp << std::endl;
+			return;
+		}
+	}
+	else if (strncmp(command, "insert", 6) == 0) 
+	{
+		// insert命令
+		if (strlen(command) < 6 || command[6] != ' ') 
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << insertHelp << std::endl;
+			return;
+		}
+
+		int line;
+		char data[1024];
+		if (sscanf(command, "insert %d \"%[^\"]\"", &line, data) == 2)
+		{
+			// 命令符合规范
+			this->insert(line, data);
+		}
+		else 
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << insertHelp << std::endl;
+			return;
+		}
+	}
+	else if (strncmp(command, "d", 1) == 0)
+	{
+		// delete命令
+		int line;
+		if (sscanf(command, "d %d", &line) == 1)
+		{
+			// 命令符合规范
+			this->del(line);
+		}
+		else
+		{
+			for (int i = 1; i < strlen(command); i++) 
+			{
+				if (command[i] != ' ') 
+				{
+					std::cout << "命令格式错误!" << std::endl;
+					std::cout << deleteHelp << std::endl;
+					return;
+				}
+			}
+			this->del();
+		}
+	}
+	else if (!(strcmp(command, "reload") == 0) && (strncmp(command, "r", 1) == 0)) 
+	{
+		// replace命令
+		if (strlen(command) < 2 || command[1] != ' ')
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << replaceHelp << std::endl;
+			return;
+		}
+
+		// 判断是带参数-s -a
+		char str[1024];
+		char data[1024];
+		if (sscanf(command, "r -s -a \"%[^\"]\" \"%[^\"]\"", str, data) == 2)
+		{
+			this->strReplace(str, data, true);
+		}
+		else if (sscanf(command, "r -s \"%[^\"]\" \"%[^\"]\"", str, data) == 2) 
+		{
+			this->strReplace(str, data);
+		}
+		else if (sscanf(command, "r \"%[^\"]\"", data) == 1)
+		{
+			this->replace(data);
+		}
+		else
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << replaceHelp << std::endl;
+			return;
+		}
+	}
+	else if (strncmp(command, "f", 1) == 0) 
+	{
+		// find命令
+		if (strlen(command) < 2 || command[1] != ' ') 
+		{
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << findHelp << std::endl;
+			return;
+		}
+
+		char str[1024];
+		if (sscanf(command, "f -re \"%[^\"]\"", str) == 1)
+		{
+			this->find(str, true);
+		}
+		else 
+		{
+			if (sscanf(command, "f \"%[^\"]\"", str) == 1) 
+			{
+				this->find(str);
+				return;
+			}
+			std::cout << "命令格式错误!" << std::endl;
+			std::cout << findHelp << std::endl;
+			return;
+		}
+	}
+	else if (strcmp(command, "info") == 0)
+	{
+		// information命令
+		for (int i = 4; i < strlen(command); i++) 
+		{
+			if (command[i] != ' ')
+			{
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << infoHelp << std::endl;
+				return;
+			}
+		}
+		this->info();
+	}
+	else if (strcmp(command, "reload") == 0)
+	{
+		// reload命令
+		for (int i = 6; i < strlen(command); i++) {
+			if (command[i] != ' ') 
+			{
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << reloadHelp << std::endl;
+				return;
+			}
+		}
+		this->reload();
+	}
+	else if (strcmp(command, "s") == 0) 
+	{
+		// save命令
+		for (int i = 4; i < strlen(command); i++) {
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << saveHelp << std::endl;
+				return;
+			}
+		}
+		this->save();
+	}
+	else if (strcmp(command, "wq") == 0) 
+	{
+		// save&quit命令
+		for (int i = 2; i < strlen(command); i++) {
+			if (command[i] != ' ') {
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << wqHelp << std::endl;
+				return;
+			}
+		}
+		this->saveQuit();
+	}
+	else if (strcmp(command, "q") == 0) 
+	{
+		// quit命令
+		for (int i = 1; i < strlen(command); i++) 
+		{
+			if (command[i] != ' ') 
+			{
+				std::cout << "命令格式错误!" << std::endl;
+				std::cout << qHelp << std::endl;
+				return;
+			}
+		}
+		this->quit();
+	}
+	else {
+		std::cout << "未知指令! 输入h获取帮助!" << std::endl;
+	}
+}
+
+/**
+* @brief 开始文件操作
+*/
+void Interactor::startup()
+{
+	std::cout << "## 正在编辑文件" << controller->getFilePath() << std::endl;
+	std::cout << "## 通过输入h来获取更多帮助..." << std::endl;
+	std::cout << std::endl;
+
+	while (true) 
+	{
+		std::cout << "~" << std::endl;
+		std::cout << controller->getLineNum() << ": " << controller->getLine() << std::endl;
+		std::cout << "# ";
+		char input[1024];
+		std::cin.getline(input, sizeof(input)); 
+
+		// 匹配指令
+		paramCommand(input);
+	}
+}
+/**
+* @brief 调用文本操作函数进行打印文本内容
+*/
+void Interactor::view() 
+{
+	controller->print();
+}
+/**
+* @brief 获取文件第一行
+*/
+void Interactor::begin() 
+{
+	controller->goHead();
+}
+/**
+* @brief 获取文本最后一行
+*/
+void Interactor::end() 
+{
+	controller->goTail();
+}
+/**
+* @brief 读取上一行文本内容
+*/
+void Interactor::prev() 
+{
+	controller->goPrev();
+}
+/**
+* @brief 读取下一行文本内容
+*/
+void Interactor::next() 
+{
+	controller->goNext();
+}
+/**
+* @brief 跳到指定行
+*/
+void Interactor::jump(int line)
+{
+	if (line > controller->getLineCount() || line < 1)
+	{
+		std::cout << "行号不规范!" << std::endl;
+		return;
+	}
+	controller->jump(line);
+}
+/**
+* @brief 插入数据到指定行
+*/
+void Interactor::insert(int line, const char* data)
+{
+	if (line < 0)
+	{
+		std::cout << "行号不规范!" << std::endl;
+		return;
+	}
+	controller->insert(line, data);
+}
+/**
+* @brief 删除某一行内容
+*/
+void Interactor::del(int line) 
+{
+	if (line != -1 && (line > controller->getLineCount() || line < 1))
+	{
+		std::cout << "行号不规范!" << std::endl;
+		return;
+	}
+	controller->remove(line);
+}
+/**
+* @brief 替换数据
+*/
+void Interactor::replace(const char* data) 
+{
+	controller->replaceLine(data);
+}
+
+void Interactor::strReplace(const char* str, const char* data, bool a) 
+{
+	controller->replaceStr(data, str, a);
+}
+
+void Interactor::find(const char* str, bool regex) 
+{
+	controller->find(str, regex);
+}
+
+void Interactor::info() 
+{
+	controller->showInfo();
+}
+
+void Interactor::reload() 
+{
+	char c;
+	if (!controller->isSaved()) 
+	{
+		std::cout << "文件未保存，是否继续(Y/N): ";
+		std::cin >> c;
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (c == 'Y') 
+		{
+			controller->reload();
+		}
+		else 
+		{
+			return;
+		}
+	}
+	else 
+	{
+		controller->reload();
+	}
+}
+
+void Interactor::save()
+{
+	controller->save();
+}
+
+void Interactor::saveQuit() 
+{
+	controller->save();
+	controller->quit();
+	exit(1);
+}
+
+void Interactor::quit() 
+{
+	char c;
+	if (!controller->isSaved()) 
+	{
+		std::cout << "文件未保存，是否继续(Y/N): ";
+		std::cin >> c;
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (c == 'Y') 
+		{
+			controller->quit();
+			exit(1);
+		}
+		else 
+		{
+			return;
+		}
+	}
+}
